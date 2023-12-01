@@ -9,31 +9,35 @@ getFilename :: [String] -> Maybe String
 getFilename [] = Maybe.Nothing
 getFilename (s:_) = Maybe.Just s
 
+isDash = \c -> c == '-' || c == '_'
+
 parseWord :: String -> String -> String
 parseWord buffer "" = reverse buffer
 parseWord buffer (c:cs)
     | Character.isAlphaNum c || c == '.' = parseWord (c:buffer) cs
     | Character.isSpace c = parseSpace buffer cs
-    | c == '-' = parseDash buffer cs
+    | isDash c = parseDash buffer cs
     | otherwise = parseWord buffer cs
 
 parseSpace :: String -> String -> String
 parseSpace buffer "" = reverse buffer
 parseSpace buffer (c:cs)
     | Character.isAlphaNum c || c == '.' = parseWord (c:'-':buffer) cs
-    | c == '-' = parseDash buffer cs
+    | isDash c = parseDash buffer cs
     | otherwise = parseSpace buffer cs
 
 parseDash :: String -> String -> String
 parseDash buffer "" = reverse buffer
 parseDash buffer (c:cs)
     | Character.isAlphaNum c || c == '.' = parseWord (c:'_':buffer) cs
+    | isDash c = parseDash buffer cs
     | otherwise = parseDash buffer cs
 
 
 normalizeFilename :: String -> String
 normalizeFilename (c:cs)
     | Character.isAlphaNum c = parseWord [c] cs
+    | isDash c = parseDash "" cs
     | otherwise = parseSpace "" cs
 
 
