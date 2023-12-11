@@ -41,6 +41,28 @@ normalizeFilename (c:cs)
     | otherwise = parseSpace "" cs
 
 
+normalizeSingleFile :: String -> IO String
+normalizeSingleFile filename = do
+    let normalizedFilename = normalizeFilename filename
+
+    fileExists <- Directory.doesFileExist filename
+    if fileExists then do
+        Directory.renameFile filename normalizedFilename
+        return ""
+    else do
+        directoryExists <- Directory.doesDirectoryExist filename
+        if directoryExists then do
+            Directory.renameDirectory filename normalizedFilename
+            return ""
+        else
+            return $ "Error: " ++ filename ++ " is not a file or directory."
+
+checkError :: String -> IO ()
+checkError "" = Exit.exitWith Exit.ExitSuccess
+checkError errorMessage = do
+    putStrLn errorMessage
+    Exit.exitWith (Exit.ExitFailure 1)
+
 main = do
     args <- Environment.getArgs
 
@@ -50,17 +72,6 @@ main = do
         Exit.exitWith (Exit.ExitFailure 1))
 
     let filename = Maybe.fromJust maybeFilename
-        normalizedFilename = normalizeFilename filename
+    output <- normalizeSingleFile filename
 
-    fileExists <- Directory.doesFileExist filename
-    if fileExists
-    then Directory.renameFile filename normalizedFilename
-    else do
-        directoryExists <- Directory.doesDirectoryExist filename
-        if directoryExists
-        then Directory.renameDirectory filename normalizedFilename
-        else do
-            putStrLn ("Error: " ++ filename ++ " is not a file or directory.")
-            Exit.exitWith (Exit.ExitFailure 1)
-
-    Exit.exitWith Exit.ExitSuccess
+    checkError output
